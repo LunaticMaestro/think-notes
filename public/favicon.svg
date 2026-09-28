@@ -1,0 +1,18 @@
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="48" height="48">
+	<defs>
+		<linearGradient id="g1" x2="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(200,0,0,200,0,0)">
+			<stop offset="0" stop-color="#ffcf00"/>
+			<stop offset="1" stop-color="#ffcf00"/>
+		</linearGradient>
+	</defs>
+	<style>
+		.s0 { fill: url(#g1) } 
+		.s1 { fill: #8c0032;stroke: #8c0032;stroke-width: .4 } 
+	</style>
+	<path fill-rule="evenodd" class="s0" d="m0 0h200v200h-200z"/>
+	<g>
+		<g>
+			<path class="s1" d="m38.7 34.7v130.6h-28.73v-130.6zm17.94 38.57h26.81l0.96 10.8q9.75-12.45 26.3-12.45 17.41 0 23.5 13.84 9.41-13.84 27.08-13.84 27.95 0 28.73 33.78v59.9h-28.73v-58.07q0-7.06-2.44-10.28-2.35-3.22-8.62-3.22-8.53 0-12.71 7.58l0.09 1.13v62.86h-28.73v-57.9q0-7.23-2.27-10.45-2.35-3.22-8.79-3.22-8.27 0-12.54 7.58v63.99h-28.64z"/>
+		</g>
+	</g>
+</svg>
