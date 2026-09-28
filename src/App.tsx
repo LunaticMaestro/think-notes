@@ -1,5 +1,5 @@
 import {v4 as uuidv4} from "uuid"
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import type { Note } from './types/note'
 import './App.css'
 import { ReprIdeaCount } from "./emoji"
@@ -7,7 +7,15 @@ import { ReprIdeaCount } from "./emoji"
 function App() {
   const newNoteRef = useRef<HTMLTextAreaElement>(null)
 
-  const [notes, setNotes] = useState<Note[]>([])
+  const [notes, setNotes] = useState<Note[]>(()=>{
+    const storedNotes = localStorage.getItem("notes")
+    if (!storedNotes) return [];
+    return JSON.parse(storedNotes)
+  })
+
+  useEffect(()=>{
+    localStorage.setItem("notes", JSON.stringify(notes));
+  }, [notes])
 
   const countNotes: number = notes.length
 
@@ -33,6 +41,11 @@ function App() {
 
   }
 
+  function removeNote(id: string){
+    const updatedNotes = notes.filter((note)=>note.id != id)
+    setNotes(updatedNotes)
+  }
+  
   function NewNote(){
     return (
       <form onSubmit={(e) => addNote(e)}>
@@ -50,9 +63,13 @@ function App() {
       <h1>Notes</h1>
       <NewNote />
       {countNotes > 0 ? <h2>So far... {ReprIdeaCount(countNotes)}</h2> : <p>Keep Adding</p>}
-
       {notes.map((note)=>{
-        return (<p key={note.id}>{note.content}</p>)
+        return (
+          <div key={note.id}>
+            <span>{note.content}
+            <button onClick={()=>removeNote(note.id)}>-</button></span>
+          </div>
+        )
       })}
     </div>
   )
