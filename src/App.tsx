@@ -1,11 +1,11 @@
 import {v4 as uuidv4} from "uuid"
-import React, { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import type { Note } from './types/note'
 import './App.css'
 import { ReprIdeaCount } from "./emoji"
+import NoteList from "./notes/NoteList"
 
 function App() {
-  const newNoteRef = useRef<HTMLTextAreaElement>(null)
 
   const [notes, setNotes] = useState<Note[]>(()=>{
     const storedNotes = localStorage.getItem("notes")
@@ -19,58 +19,39 @@ function App() {
 
   const countNotes: number = notes.length
 
-  function addNote(e: React.SubmitEvent<HTMLFormElement>){
-    e.preventDefault();
-    const content = newNoteRef.current?.value.trim()
-    if (!content) return 
-
-    const newNote = {
-      id: uuidv4(), 
-      content: content
-    }
-
-    setNotes((currentNotes) => [
-      ...currentNotes,
-      newNote,
-    ])
-
-    // reset the form
-    if (newNoteRef.current) {
-      newNoteRef.current.value = ''
-    }
-
+  function updateNote(id: string, content: string){
+    setNotes((prevNotes) => (
+      prevNotes.map((note)=>(
+        note.id === id
+        ? {... note, content}
+        : note
+        )
+      )
+    ))
   }
 
-  function removeNote(id: string){
+  function handleCreateNote (){
+    const newNote: Note = {
+      id: uuidv4(),
+      content: "",
+    };
+
+    setNotes((prev) => [newNote, ...prev]);
+    return newNote.id
+  };
+
+  function deleteNote(id: string){
     const updatedNotes = notes.filter((note)=>note.id != id)
     setNotes(updatedNotes)
   }
   
-  function NewNote(){
-    return (
-      <form onSubmit={(e) => addNote(e)}>
-        <textarea 
-          ref={newNoteRef}
-          placeholder="What you cooking ?"
-        ></textarea>
-        <button type="submit">+</button>
-      </form>
-    )
-  }
 
   return (
     <div>
       <h1>Notes</h1>
-      <NewNote />
-      {countNotes > 0 ? <h2>So far... {ReprIdeaCount(countNotes)}</h2> : <p>Keep Adding</p>}
-      {notes.map((note)=>{
-        return (
-          <div key={note.id}>
-            <span>{note.content}
-            <button onClick={()=>removeNote(note.id)}>-</button></span>
-          </div>
-        )
-      })}
+      <NoteList notes={notes} handleUpdate={updateNote} handleDelete={deleteNote} handleCreateNote={handleCreateNote} />
+      {countNotes > 0 ? <h2>So far... {ReprIdeaCount(countNotes)}</h2> : <></>}
+      
     </div>
   )
 }
