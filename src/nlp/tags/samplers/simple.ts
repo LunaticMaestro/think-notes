@@ -1,4 +1,4 @@
-import type { LexicalDocument } from "../../types/lexical";
+import type { LexicalDocument } from "@/types/nlp";
 
 export class SimpleSampler {
   sample(document: LexicalDocument, k: number): string[] {
