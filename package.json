@@ -13,9 +13,11 @@
     "@heroui/react": "^3.2.6",
     "@heroui/styles": "^3.2.6",
     "@tailwindcss/vite": "^4.3.3",
+    "compromise": "^14.17.0",
     "motion": "^13.4.6",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "stopword": "^3.1.5",
     "uuid": "^14.0.2"
   },
   "devDependencies": {
@@ -23,9 +25,10 @@
     "@gravity-ui/icons": "^2.22.0",
     "@rolldown/plugin-babel": "^0.2.3",
     "@types/babel__core": "^7.20.5",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
+    "@types/stopword": "^2.0.3",
     "@vitejs/plugin-react": "^6.1.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "oxlint": "^1.81.0",

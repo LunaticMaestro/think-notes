@@ -1,4 +1,5 @@
 import type { Note } from "../types/note";
+import type { Tag, NoteTag } from "@/types/tags"
 import NoteCard from "./NoteCard";
 import { AnimatePresence, motion } from "motion/react";
 import CreateNoteCard from "./CreateNote";
@@ -6,14 +7,22 @@ import {useState} from "react"
 
 interface NoteListProps {
   notes: Note[];
+  noteTags: NoteTag[];
 // update, delete 
   handleUpdate: (id: string, content: string)=>void,
   handleDelete: (id: string)=>void,
   handleCreateNote: ()=>string,
-
+  handleTags: (id:string, keywords: Tag[])=>void
 }
 
-function NoteList({ notes, handleUpdate, handleDelete, handleCreateNote }: NoteListProps) {
+function NoteList({ 
+    notes, 
+    noteTags,
+    handleUpdate, 
+    handleDelete, 
+    handleCreateNote,
+    handleTags
+  }: NoteListProps) {
   const [newNodeId, setNewNodeId] = useState<string>("")
 
   return (
@@ -37,9 +46,11 @@ function NoteList({ notes, handleUpdate, handleDelete, handleCreateNote }: NoteL
             >
               <NoteCard
                 key={note.id}
+                noteTags={noteTags}
                 note={note}
                 handleUpdate={handleUpdate}
                 handleDelete={handleDelete}
+                handleTags={handleTags}
                 isActive={note.id == newNodeId}
               />
             </motion.div>

@@ -1,6 +1,7 @@
 import {v4 as uuidv4} from "uuid"
 import { useState, useEffect } from 'react'
 import type { Note } from './types/note'
+import type { NoteTag, Tag } from "./types/tags"
 import './App.css'
 import { ReprIdeaCount } from "./emoji"
 import NoteList from "./notes/NoteList"
@@ -13,9 +14,19 @@ function App() {
     return JSON.parse(storedNotes)
   })
 
+  const [noteTags, setNoteTags] = useState<NoteTag[]>(()=>{
+    const storedNotes = localStorage.getItem("noteTags")
+    if (!storedNotes) return [];
+    return JSON.parse(storedNotes)
+  })
+
   useEffect(()=>{
     localStorage.setItem("notes", JSON.stringify(notes));
   }, [notes])
+
+  useEffect(()=>{
+    localStorage.setItem("noteTags", JSON.stringify(noteTags));
+  }, [noteTags])
 
   const countNotes: number = notes.length
 
@@ -28,6 +39,23 @@ function App() {
         )
       )
     ))
+  }
+
+  /**
+   * Updates the tags associated with a given item.
+   *
+   * @param id - The ID of  notes
+   * @param keywords - The tags to associate with the item.
+   */
+  function updateTags(id: string, keywords: Tag[]) {
+    console.log(keywords)
+    setNoteTags((prev) => [
+      ...prev.filter((note) => note.id !== id),
+      {
+        id,
+        tags: keywords,
+      },
+    ]);
   }
 
   function handleCreateNote (){
@@ -49,7 +77,14 @@ function App() {
   return (
     <div>
       <h1>Notes</h1>
-      <NoteList notes={notes} handleUpdate={updateNote} handleDelete={deleteNote} handleCreateNote={handleCreateNote} />
+      <NoteList 
+        notes={notes} 
+        noteTags={noteTags}
+        handleUpdate={updateNote} 
+        handleDelete={deleteNote} 
+        handleCreateNote={handleCreateNote} 
+        handleTags={updateTags}
+      />
       {countNotes > 0 ? <h2>So far... {ReprIdeaCount(countNotes)}</h2> : <></>}
       
     </div>
