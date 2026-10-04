@@ -48,7 +48,6 @@ function App() {
    * @param keywords - The tags to associate with the item.
    */
   function updateTags(id: string, keywords: Tag[]) {
-    console.log(keywords)
     setNoteTags((prev) => [
       ...prev.filter((note) => note.id !== id),
       {

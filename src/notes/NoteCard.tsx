@@ -5,6 +5,8 @@ import { TrashBin, ChevronsCollapseUpRight } from "@gravity-ui/icons";
 import { TagGroupWithListData } from "./Tags";
 import type { Note } from "../types/note";
 import type { NoteTag, Tag } from "@/types/tags"
+import { v4 as uuid4} from "uuid"
+import type { KeywordCandidate } from "@/types/nlp";
 
 type NoteCardProps = {
   note: Note
@@ -27,9 +29,6 @@ function NoteCard({
   const [kw, setKw] = useState<Tag[]>(() => {
   return noteTags.find((noteTag) => noteTag.id === note.id)?.tags ?? [];
 });
-
-  console.log(note.id, note.content)
-  console.log(kw)
 
   // NLP worker
   const tagNLPWorker = useRef<Worker | null>(null);
@@ -71,10 +70,12 @@ function NoteCard({
           return;
         }
 
-        const updatedTags = message.keywords.map((keyword: string) => ({
+        // console.log(message.document.selected)
+
+        const updatedTags = message.document.selected.map((keywordObject: KeywordCandidate) => ({
             // Keyword itself is stable and doesn't need a random UUID.
-            id: keyword,
-            name: keyword,
+            id: keywordObject.keyword,
+            name: keywordObject.keyword,
           })
         )
 
