@@ -23,6 +23,5 @@ export {
 } from "./hashtag";
 
 export type {
-  KeywordType,
   SamplerKeyword,
 } from "./types";
