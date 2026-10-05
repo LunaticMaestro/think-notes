@@ -1,12 +1,4 @@
-export type KeywordType =
-  | "datetime"
-  | "person"
-  | "location"
-  | "money"
-  | "url"
-  | "hashtag"
-  | "generic";
-
+import type { KeywordType } from "@/types/nlp";
 
 export interface SamplerKeyword {
   keyword: string;

@@ -1,4 +1,11 @@
-export type KeywordType = "datetime" | "person" | "location" | "generic";
+export type KeywordType =
+  | "datetime"
+  | "person"
+  | "location"
+  | "money"
+  | "url"
+  | "hashtag"
+  | "generic";
 
 export type SamplerId =
   | "unigram"
