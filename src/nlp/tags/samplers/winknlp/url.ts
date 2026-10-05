@@ -14,29 +14,34 @@ export function sampleURL(
   // console.log(doc.entities().out(nlp.its.detail));
 
   return doc
-    .entities()
-    .out(nlp.its.detail)
-    .filter(
-      (entity) => entity.type === "URL",
-    )
-    .map((entity): SamplerKeyword => {
-      let domain = entity.value;
-      
-      try {
-        // Enforce protocol prefix so the native URL parser handles domain strings correctly
-        const fullUrl = entity.value.startsWith('http') 
-          ? entity.value 
-          : `https://${entity.value}`;
-          
-        domain = new URL(fullUrl).hostname;
-      } catch (e) {
-        // Fallback to original matched value if URL constructor fails
-        console.error(e)
-      }
+  .entities()
+  .out(nlp.its.detail)
+  .filter(
+    (entity): entity is {
+      type: string;
+      value: string;
+    } =>
+      typeof entity !== "string" &&
+      entity.type === "URL",
+  )
+  .map((entity): SamplerKeyword => {
+    let domain = entity.value;
 
-      return {
-        keyword: domain,
-        type: "URL", // Matches the literal type requirement
-      };
-    });
+    try {
+      // Enforce protocol prefix so the native URL parser handles domain strings correctly
+      const fullUrl = entity.value.startsWith("http")
+        ? entity.value
+        : `https://${entity.value}`;
+
+      domain = new URL(fullUrl).hostname;
+    } catch (e) {
+      // Fallback to original matched value if URL constructor fails
+      console.error(e);
+    }
+
+    return {
+      keyword: domain,
+      type: "url",
+    };
+  });
 }

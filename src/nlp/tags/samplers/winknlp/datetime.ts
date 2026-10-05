@@ -11,15 +11,19 @@ export function sampleDatetime(
   const doc = nlp.readDoc(text);
 
   return doc
-    .entities()
-    .out(nlp.its.detail)
-    .filter(
-      (entity) =>
-        entity.type === "DATE" ||
-        entity.type === "TIME",
-    )
-    .map((entity) => ({
-      keyword: entity.value,
-      type: "datetime",
-    }));
+  .entities()
+  .out(nlp.its.detail)
+  .filter(
+    (entity): entity is {
+      type: string;
+      value: string;
+    } =>
+      typeof entity !== "string" &&
+      (entity.type === "DATE" ||
+        entity.type === "TIME"),
+  )
+  .map((entity) => ({
+    keyword: entity.value,
+    type: "datetime",
+  }));
 }
