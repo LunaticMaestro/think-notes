@@ -1,9 +1,6 @@
-export type Tag = {
-    id: string, 
-    name: string
-}
+import type { Keyword } from "./nlp"
 
-export type NoteTag = {
+export type NoteKeywords = {
     id: string,
-    tags: Tag[]
+    keywords: Keyword[]
 }

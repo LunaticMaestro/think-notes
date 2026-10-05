@@ -1,4 +1,25 @@
-export interface LexicalDocument {
-  document: string[];
-  keywords: Record<string, number>;
+export type KeywordType = "datetime" | "person" | "location" | "generic";
+
+export type SamplerId =
+  | "unigram"
+  | "bigram"
+  | "trigram"
+  | "tfidf"
+  | "wink-datetime"
+  | "wink-money"
+  | "wink-url"
+  | "wink-hashtag"
+  ;
+
+export interface Keyword {
+  id: string;
+  name: string;
+  type: KeywordType;
+  sampler: SamplerId;
+}
+
+
+export type Reward = {
+  samplerId: SamplerId, 
+  dislike: 0 | 1
 }

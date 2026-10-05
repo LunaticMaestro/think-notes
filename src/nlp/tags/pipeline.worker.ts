@@ -1,38 +1,117 @@
-import { Preprocess } from "./extractor/lexical/preprocess";
-import { Unigram } from "./extractor/lexical/unigram";
-import type { LexicalDocument } from "@/types/nlp";
+import { tagFinder } from "./pipeline";
+import { initializeSamplers } from "./samplers/initializeSamplers";
+import { DecisionPolicy } from "./decision/policy/DecisionPolicy";
+import type { Scorer } from "./decision/policy/types";
 
-const preprocess = new Preprocess();
-const unigram = new Unigram();
 
-function TagFinder(text: string): LexicalDocument {
-  const processedDocument = preprocess.process(text);
-
-  const unigramResult = unigram.process(processedDocument);
-
-  return {
-    document: processedDocument,
-    keywords: {
-      ...unigramResult.keywords,
+const DECISION_POLICY_SCORERS: Record<
+  string,
+  Scorer
+> = {
+  "business-weight": {
+    scorerId: "business-weight",
+    defaultWeight: 1,
+    weights: {
+      "wink-money": 2,
+      "wink-url": 2,
     },
-  };
+  },
+
+  exploration: {
+    scorerId: "exploration",
+    defaultWeight: 1,
+    weights: {
+      "wink-datetime": 2,
+    },
+  },
+};
+
+const decisionPolicy = new DecisionPolicy();
+
+let initialized = false;
+let initializationPromise:
+  | Promise<void>
+  | undefined;
+
+async function initialize(): Promise<void> {
+  if (initialized) {
+    return;
+  }
+
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+
+  initializationPromise =
+    (async () => {
+      await initializeSamplers();
+      await decisionPolicy.init(DECISION_POLICY_SCORERS);
+      initialized = true;
+    })();
+
+  try {
+    await initializationPromise;
+  } catch (error) {
+    initialized = false;
+    throw error;
+  } finally {
+    initializationPromise = undefined;
+  }
 }
 
-self.onmessage = (event) => {
+self.onmessage = async (event) => {
   try {
-    if (event.data.type !== "find") {
+    const { type } = event.data;
+
+    if (type === "init") {
+      await initialize();
+
+      self.postMessage({
+        type: "ready",
+      });
+
       return;
     }
 
-    const { text, requestId } = event.data;
+    if (!initialized) {
+      throw new Error(
+        "NLP worker has not been initialized.",
+      );
+    }
 
-    const document = TagFinder(text);
+    if (type === "find") {
+      const {
+        text,
+        requestId,
+      } = event.data;
 
-    self.postMessage({
-      type: "complete",
-      requestId,
-      keywords: Object.keys(document.keywords),
-    });
+      const result = await tagFinder(
+        text,
+        decisionPolicy,
+      );
+
+      self.postMessage({
+        type: "complete",
+        requestId,
+        keywords: result,
+      });
+
+      return;
+    }
+
+    if (type === "update-reward") {
+      const {
+        samplerId,
+        dislike,
+      } = event.data;
+
+      await decisionPolicy.updateBeta(
+        samplerId,
+        dislike,
+      );
+
+      return;
+    }
   } catch (error) {
     self.postMessage({
       type: "error",

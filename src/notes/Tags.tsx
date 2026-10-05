@@ -1,3 +1,4 @@
+import type { Keyword, Reward } from "@/types/nlp";
 import type {Key} from "@heroui/react";
 
 import {
@@ -5,21 +6,44 @@ import {
   Tag,
   TagGroup,
 } from "@heroui/react";
+import type React from "react";
 
 type TagGroupWithListDataProps = {
   isExpanded?: boolean;
-  tagsList: {id: string, name: string}[]
+  rewardKeyword: ({samplerId, dislike}: Reward) => void;
+  tagsList: Keyword[]
+  setKw: React.Dispatch<React.SetStateAction<Keyword[]>>;
 };
 
 export function TagGroupWithListData({
   tagsList,
+  setKw,
+  rewardKeyword = (()=>{}),
   isExpanded = true,
 }: TagGroupWithListDataProps) {
 
   
   const onRemove = (keys: Set<Key>) => {
-    console.log(keys)
-  };
+  console.log("SS");
+
+  const dislikedKeywords = tagsList.filter((keyword) =>
+    keys.has(keyword.id)
+  );
+
+  console.log(dislikedKeywords)
+
+  dislikedKeywords.forEach((keyword: Keyword) => {
+    rewardKeyword({
+      samplerId: keyword.sampler,
+      dislike: 1,
+    });
+  });
+
+  setKw((currentKw) =>
+    currentKw.filter((tag) => !keys.has(tag.id))
+  );
+};
+  
 
   return (
     <div>

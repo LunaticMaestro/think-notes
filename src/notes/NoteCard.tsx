@@ -4,118 +4,38 @@ import { Card, CloseButton, Button, Separator } from "@heroui/react";
 import { TrashBin, ChevronsCollapseUpRight } from "@gravity-ui/icons";
 import { TagGroupWithListData } from "./Tags";
 import type { Note } from "../types/note";
-import type { NoteTag, Tag } from "@/types/tags"
-
+import type { Keyword, Reward } from "@/types/nlp";
 type NoteCardProps = {
-  note: Note
-  noteTags: NoteTag[]
-  handleUpdate: (id: string, content: string) => void
-  handleDelete: (id: string) => void
-  handleTags: (id:string, keywords: Tag[])=>void
-  isActive?: boolean
+  note: Note;
+  keywords: Keyword[];
+  handleUpdate: (id: string, content: string) => void;
+  handleDelete: (id: string) => void;
+  handleTags: (id: string, keywords: Keyword[]) => void;
+  isActive?: boolean;
+  requestNlp: (text: string) => void;
+  rewardKeyword: ({samplerId, dislike}: Reward) => void;
+  predictionsRef: React.RefObject<Keyword[]>;
 };
 
 function NoteCard({
   note,
-  noteTags,
+  keywords,
   handleUpdate,
   handleDelete,
   handleTags,
   isActive = false,
+  requestNlp,
+  rewardKeyword,
+  predictionsRef,
 }: NoteCardProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [kw, setKw] = useState<Tag[]>(() => {
-  return noteTags.find((noteTag) => noteTag.id === note.id)?.tags ?? [];
-});
+  const isEdited = useRef(false);
+  const [kw, setKw] = useState<Keyword[]>(keywords);
 
-  console.log(note.id, note.content)
-  console.log(kw)
-
-  // NLP worker
-  const tagNLPWorker = useRef<Worker | null>(null);
-
-  // Debounce timer for NLP
-  const nlpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Used to identify the newest NLP request
-  const requestId = useRef(0);
+  // console.log(note.id, note.content);
+  // console.log(kw);
 
   const content = note.content;
-
-  /*
-   * Create the worker lazily.
-   *
-   * The worker doesn't exist until NLP is actually requested.
-   */
-  function getNLPWorker() {
-    if (tagNLPWorker.current) {
-      return tagNLPWorker.current;
-    }
-
-    const worker = new Worker(
-      new URL("@/nlp/tags/pipeline.worker.ts", import.meta.url),
-      { type: "module" }
-    );
-
-    worker.onmessage = (event) => {
-      const message = event.data;
-
-      if (message.type === "complete") {
-        /*
-         * Ignore results from old requests.
-         *
-         * If request 10 is the newest request, a result from
-         * request 9 should never overwrite it.
-         */
-        if (message.requestId !== requestId.current) {
-          return;
-        }
-
-        const updatedTags = message.keywords.map((keyword: string) => ({
-            // Keyword itself is stable and doesn't need a random UUID.
-            id: keyword,
-            name: keyword,
-          })
-        )
-
-        setKw(updatedTags);
-
-        handleTags(note.id, updatedTags)
-
-        return;
-      }
-
-      if (message.type === "error") {
-        if (message.requestId !== requestId.current) {
-          return;
-        }
-
-        console.error("NLP worker error:", message.error);
-      }
-    };
-
-    worker.onerror = (error) => {
-      console.error("NLP worker crashed:", error);
-    };
-
-    tagNLPWorker.current = worker;
-
-    return worker;
-  }
-
-  /*
-   * Clean up the worker and timers when this NoteCard unmounts.
-   */
-  useEffect(() => {
-    return () => {
-      if (nlpTimer.current) {
-        clearTimeout(nlpTimer.current);
-      }
-
-      tagNLPWorker.current?.terminate();
-      tagNLPWorker.current = null;
-    };
-  }, []);
 
   /*
    * Open active note after a small delay.
@@ -134,6 +54,9 @@ function NoteCard({
    * Lock body scrolling while the note is expanded.
    */
   useEffect(() => {
+    // clear at both entry/ exit
+    predictionsRef.current = [];
+
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -143,7 +66,21 @@ function NoteCard({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isOpen]);
+  }, [isOpen, predictionsRef]);
+
+  // In Child Component:
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const interval = setInterval(() => {
+      if (predictionsRef.current.length > 0) {
+        setKw(predictionsRef.current);
+        predictionsRef.current = [];
+      }
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [isOpen, predictionsRef]);
 
   /*
    * Send text to NLP after the user stops typing.
@@ -161,28 +98,8 @@ function NoteCard({
    *
    * Instead, NLP runs once after the user pauses.
    */
-  function scheduleNLP(text: string) {
-    if (nlpTimer.current) {
-      clearTimeout(nlpTimer.current);
-    }
 
-    nlpTimer.current = setTimeout(() => {
-      const worker = getNLPWorker();
-
-      const id = ++requestId.current;
-
-      worker.postMessage({
-        type: "find",
-        requestId: id,
-        text,
-      });
-    }, 200);
-  }
-
-  function handleEditNoteContent(
-    noteId: string,
-    textValue: string
-  ) {
+  function handleEditNoteContent(noteId: string, textValue: string) {
     /*
      * Update the note immediately so typing stays responsive.
      */
@@ -191,7 +108,9 @@ function NoteCard({
     /*
      * NLP happens separately and is debounced.
      */
-    scheduleNLP(textValue);
+    requestNlp(textValue);
+
+    isEdited.current = true;
   }
 
   function uiUpdateDelete() {
@@ -205,11 +124,21 @@ function NoteCard({
   function handleClose() {
     setIsOpen(false);
 
+    handleTags(note.id, kw);
+
     if (content.trim().length === 0) {
       setTimeout(() => {
         handleDelete(note.id);
       }, 350);
     }
+
+    if (isEdited.current){
+      keywords.map((eachKeyword)=>{
+        rewardKeyword({samplerId: eachKeyword.sampler, dislike: 0})
+      })
+    }
+
+    isEdited.current = false
   }
 
   const layoutId = `card-${note.id}`;
@@ -237,17 +166,12 @@ function NoteCard({
           >
             <Card.Content className="text-m">
               <p>
-                {content.length > 50
-                  ? `${content.slice(0, 50)}...`
-                  : content}
+                {content.length > 50 ? `${content.slice(0, 50)}...` : content}
               </p>
             </Card.Content>
 
             <Card.Footer>
-              <TagGroupWithListData
-                tagsList={kw}
-                isExpanded={false}
-              />
+              <TagGroupWithListData tagsList={kw} setKw={setKw} rewardKeyword={rewardKeyword} isExpanded={false} />
             </Card.Footer>
           </Card>
         </motion.div>
@@ -315,7 +239,7 @@ function NoteCard({
 
                   <Separator className="my-3" />
 
-                  <TagGroupWithListData tagsList={kw} />
+                  <TagGroupWithListData tagsList={kw} setKw={setKw} rewardKeyword={rewardKeyword}/>
                 </Card.Header>
 
                 <Card.Content
@@ -334,10 +258,7 @@ function NoteCard({
                     autoFocus
                     value={content}
                     onChange={(e) =>
-                      handleEditNoteContent(
-                        note.id,
-                        e.target.value
-                      )
+                      handleEditNoteContent(note.id, e.target.value)
                     }
                     className="
                       min-h-0
