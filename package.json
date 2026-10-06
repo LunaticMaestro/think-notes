@@ -13,6 +13,7 @@
     "@cognitive-engine/bandit": "^0.2.1",
     "@heroui/react": "^3.2.6",
     "@heroui/styles": "^3.2.6",
+    "@huggingface/transformers": "^4.3.0",
     "@tailwindcss/vite": "^4.3.3",
     "compromise": "^14.17.0",
     "motion": "^13.4.6",

@@ -5,6 +5,7 @@ export type KeywordType =
   | "money"
   | "url"
   | "hashtag"
+  | "organization"
   | "generic";
 
 export type SamplerId =
@@ -16,6 +17,12 @@ export type SamplerId =
   | "wink-money"
   | "wink-url"
   | "wink-hashtag"
+  | "hf-qa-b-person"
+  | "hf-qa-a-action"
+  | "hf-ner-PER"
+  | "hf-ner-LOC"
+  | "hf-ner-ORG"
+
   ;
 
 export interface Keyword {

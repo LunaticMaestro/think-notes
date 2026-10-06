@@ -14,20 +14,23 @@ export async function tagFinder(
   decisionPolicy: DecisionPolicy,
 ): Promise<Keyword[]> {
   const samplers =
-    await runAvailableSamplers(text);
+    await runAvailableSamplers(text, 5);
 
+  console.log("SAmplers: ", samplers)
   const candidates =
     samplers.filter(
       (sampler) =>
         sampler.keywords.length > 0,
     );
-
     
+  console.log("Candy", candidates)
+
   const selection = await selectKeywords(
     candidates, 
     decisionPolicy,
     K
   )
+  console.log("Sel: ", selection)
 
   return selection
 }
