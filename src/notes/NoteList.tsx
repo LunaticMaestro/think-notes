@@ -41,7 +41,7 @@ function NoteList({
           <CreateNoteCard
             suggestionText={
               notes.length === 0
-                ? "Start with `Take a sip of water`"
+                ? "Start with `Take a sip of water at 3pm #StayHydrated`"
                 : "Keep ideas coming"
             }
             onClick={() => {
