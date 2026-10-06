@@ -15,23 +15,6 @@ import {
   sampleHastag,
 } from "./winknlp";
 
-import {
-  createNerSampler,
-} from "./huggingface/ner";
-
-import {
-  isReady as isNerReady,
-} from "./huggingface/ner/isReady";
-
-import {
-  createQaASampler,
-  createQaBSampler,
-} from "./huggingface/qa";
-
-import {
-  isQaReady,
-} from "./huggingface/qa/isReady";
-
 const TIMEOUT_MS = 5_000;
 const READY_POLL_MS = 50;
 
@@ -60,53 +43,6 @@ const SAMPLERS: Array<{
     run: sampleHastag,
     isReady: isWinkReady,
   },
-  // {
-  //   id: "hf-ner-PER",
-  //   run: createNerSampler(
-  //     "PER",
-  //     "person",
-  //     0.1,
-  //   ),
-  //   isReady: isNerReady,
-  // },
-  // {
-  //   id: "hf-ner-LOC",
-  //   run: createNerSampler(
-  //     "LOC",
-  //     "location",
-  //     0.1,
-  //   ),
-  //   isReady: isNerReady,
-  // },
-  // {
-  //   id: "hf-ner-ORG",
-  //   run: createNerSampler(
-  //     "ORG",
-  //     "organization",
-  //     0.1,
-  //   ),
-  //   isReady: isNerReady,
-  // },
-  // {
-  //   id: "hf-qa-b-person",
-  //   run: createQaBSampler(
-  //     "What do I plan to do",
-  //     "generic",
-  //     0.1,
-  //   ),
-  //   isReady: () =>
-  //     isQaReady("qa-B"),
-  // },
-  // {
-  //   id: "hf-qa-a-action",
-  //   run: createQaASampler(
-  //     "What do I plan to do",
-  //     "generic",
-  //     0.1,
-  //   ),
-  //   isReady: () =>
-  //     isQaReady("qa-A"),
-  // },
 ];
 
 function delay(
