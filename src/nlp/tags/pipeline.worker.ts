@@ -17,13 +17,13 @@ const DECISION_POLICY_SCORERS: Record<
     },
   },
 
-  exploration: {
-    scorerId: "exploration",
-    defaultWeight: 1,
-    weights: {
-      "wink-datetime": 2,
-    },
-  },
+  // exploration: {
+  //   scorerId: "exploration",
+  //   defaultWeight: 1,
+  //   weights: {
+  //     "wink-datetime": 2,
+  //   },
+  // },
 };
 
 const decisionPolicy = new DecisionPolicy();
@@ -43,11 +43,15 @@ async function initialize(): Promise<void> {
   }
 
   initializationPromise =
-    (async () => {
-      await initializeSamplers();
-      await decisionPolicy.init(DECISION_POLICY_SCORERS);
-      initialized = true;
-    })();
+  (async () => {
+    await decisionPolicy.init(
+      DECISION_POLICY_SCORERS,
+    );
+
+    initializeSamplers();
+
+    initialized = true;
+  })();
 
   try {
     await initializationPromise;

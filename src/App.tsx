@@ -13,7 +13,13 @@ function App() {
   const nlpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [nlpReady, setNlpReady] = useState(false);
-  const predictionsRef = useRef<Keyword[]>([]);
+  const predictionsRef = useRef<{
+    keywords: Keyword[];
+    hasNewPrediction: boolean;
+  }>({
+    keywords: [],
+    hasNewPrediction: false,
+  });
 
   const [notes, setNotes] = useState<Note[]>(() => {
     const storedNotes = localStorage.getItem("notes");
@@ -61,7 +67,10 @@ function App() {
           return;
         }
 
-        predictionsRef.current = message.keywords;
+        predictionsRef.current = {
+          keywords: message.keywords,
+          hasNewPrediction: true
+        }
 
         console.log("R", predictionsRef.current);
 

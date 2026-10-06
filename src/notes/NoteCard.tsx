@@ -5,6 +5,7 @@ import { TrashBin, ChevronsCollapseUpRight } from "@gravity-ui/icons";
 import { TagGroupWithListData } from "./Tags";
 import type { Note } from "../types/note";
 import type { Keyword, Reward } from "@/types/nlp";
+
 type NoteCardProps = {
   note: Note;
   keywords: Keyword[];
@@ -13,8 +14,11 @@ type NoteCardProps = {
   handleTags: (id: string, keywords: Keyword[]) => void;
   isActive?: boolean;
   requestNlp: (text: string) => void;
-  rewardKeyword: ({samplerId, dislike}: Reward) => void;
-  predictionsRef: React.RefObject<Keyword[]>;
+  rewardKeyword: ({ samplerId, dislike }: Reward) => void;
+  predictionsRef: React.RefObject<{
+    keywords: Keyword[];
+    hasNewPrediction: boolean;
+  }>;
 };
 
 function NoteCard({
@@ -32,8 +36,7 @@ function NoteCard({
   const isEdited = useRef(false);
   const [kw, setKw] = useState<Keyword[]>(keywords);
 
-  // console.log(note.id, note.content);
-  // console.log(kw);
+  const nlpDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const content = note.content;
 
@@ -51,11 +54,25 @@ function NoteCard({
   }, [isActive]);
 
   /*
+   * Clean up pending NLP prediction when the
+   * component unmounts.
+   */
+  useEffect(() => {
+    return () => {
+      if (nlpDebounceTimer.current) {
+        clearTimeout(nlpDebounceTimer.current);
+      }
+    };
+  }, []);
+
+  /*
    * Lock body scrolling while the note is expanded.
    */
   useEffect(() => {
-    // clear at both entry/ exit
-    predictionsRef.current = [];
+    predictionsRef.current = {
+      keywords: [],
+      hasNewPrediction: false,
+    };
 
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -68,52 +85,64 @@ function NoteCard({
     };
   }, [isOpen, predictionsRef]);
 
-  // In Child Component:
+  /*
+   * Read predictions produced by the worker.
+   */
   useEffect(() => {
     if (!isOpen) return;
 
     const interval = setInterval(() => {
-      if (predictionsRef.current.length > 0) {
-        setKw(predictionsRef.current);
-        predictionsRef.current = [];
+      if (!predictionsRef.current.hasNewPrediction) {
+        return;
       }
+
+      setKw(predictionsRef.current.keywords);
+      predictionsRef.current = { keywords: [], hasNewPrediction: false };
     }, 50);
 
     return () => clearInterval(interval);
   }, [isOpen, predictionsRef]);
 
   /*
-   * Send text to NLP after the user stops typing.
+   * Update the note immediately.
    *
-   * This is the important optimization:
-   *
-   * typing:
-   * h
-   * he
-   * hel
-   * hell
-   * hello
-   *
-   * does NOT result in 5 NLP operations.
-   *
-   * Instead, NLP runs once after the user pauses.
+   * NLP prediction is debounced by 200ms so that
+   * rapid typing does not trigger a prediction
+   * for every character.
    */
-
   function handleEditNoteContent(noteId: string, textValue: string) {
     /*
-     * Update the note immediately so typing stays responsive.
+     * Update the note immediately so typing
+     * stays responsive.
      */
     handleUpdate(noteId, textValue);
 
     /*
-     * NLP happens separately and is debounced.
+     * Cancel the previous pending NLP request.
      */
     requestNlp(textValue);
+    // if (nlpDebounceTimer.current) {
+    //   clearTimeout(nlpDebounceTimer.current);
+    // }
+
+    // /*
+    //  * Run NLP only after the user has stopped
+    //  * typing for 200ms.
+    //  */
+    // nlpDebounceTimer.current = setTimeout(() => {
+    //   requestNlp(textValue);
+    //   nlpDebounceTimer.current = null;
+    // }, 200);
 
     isEdited.current = true;
   }
 
   function uiUpdateDelete() {
+    if (nlpDebounceTimer.current) {
+      clearTimeout(nlpDebounceTimer.current);
+      nlpDebounceTimer.current = null;
+    }
+
     setIsOpen(false);
 
     setTimeout(() => {
@@ -122,6 +151,11 @@ function NoteCard({
   }
 
   function handleClose() {
+    if (nlpDebounceTimer.current) {
+      clearTimeout(nlpDebounceTimer.current);
+      nlpDebounceTimer.current = null;
+    }
+
     setIsOpen(false);
 
     handleTags(note.id, kw);
@@ -132,13 +166,16 @@ function NoteCard({
       }, 350);
     }
 
-    if (isEdited.current){
-      keywords.map((eachKeyword)=>{
-        rewardKeyword({samplerId: eachKeyword.sampler, dislike: 0})
-      })
+    if (isEdited.current) {
+      keywords.map((eachKeyword) => {
+        rewardKeyword({
+          samplerId: eachKeyword.sampler,
+          dislike: 0,
+        });
+      });
     }
 
-    isEdited.current = false
+    isEdited.current = false;
   }
 
   const layoutId = `card-${note.id}`;
@@ -171,7 +208,12 @@ function NoteCard({
             </Card.Content>
 
             <Card.Footer>
-              <TagGroupWithListData tagsList={kw} setKw={setKw} rewardKeyword={rewardKeyword} isExpanded={false} />
+              <TagGroupWithListData
+                tagsList={kw}
+                setKw={setKw}
+                rewardKeyword={rewardKeyword}
+                isExpanded={false}
+              />
             </Card.Footer>
           </Card>
         </motion.div>
@@ -239,7 +281,11 @@ function NoteCard({
 
                   <Separator className="my-3" />
 
-                  <TagGroupWithListData tagsList={kw} setKw={setKw} rewardKeyword={rewardKeyword}/>
+                  <TagGroupWithListData
+                    tagsList={kw}
+                    setKw={setKw}
+                    rewardKeyword={rewardKeyword}
+                  />
                 </Card.Header>
 
                 <Card.Content

@@ -15,7 +15,10 @@ interface NoteListProps {
   handleTags: (id: string, keywords: Keyword[]) => void;
   requestNlp: (text: string) => void;
   rewardKeyword: ({ samplerId, dislike }: Reward) => void;
-  predictionsRef: React.RefObject<Keyword[]>;
+  predictionsRef: React.RefObject<{
+    keywords: Keyword[];
+    hasNewPrediction: boolean;
+  }>;
 }
 
 function NoteList({

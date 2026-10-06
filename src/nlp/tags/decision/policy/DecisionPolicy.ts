@@ -126,7 +126,7 @@ export class DecisionPolicy {
     }
 
     if (dislike === 1) {
-      beta.beta += 2;
+      beta.beta += 7;
     } else {
       beta.alpha += 1;
     }

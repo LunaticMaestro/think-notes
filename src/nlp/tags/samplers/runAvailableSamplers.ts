@@ -1,236 +1,113 @@
 import type {
   AvailableSampler,
   SamplerFunction,
-} from "./types";
+} from "@/nlp/tags/samplers/types";
+
+import type {
+  SamplerId
+} from "@/types/nlp"
 
 import {
+  isReady as isWinkReady,
   sampleDatetime,
   sampleURL,
   sampleMoney,
   sampleHastag,
 } from "./winknlp";
 
-import type {
-  SamplerId,
-} from "@/types/nlp";
+import {
+  createNerSampler,
+} from "./huggingface/ner";
 
-/**
- * Number of sampler arms we want available before
- * allowing the remaining samplers to be cancelled.
- *
- * This is intentionally hardcoded here for now.
- */
-const K = 5;
+import {
+  isReady as isNerReady,
+} from "./huggingface/ner/isReady";
 
-/**
- * How long we are willing to wait for the next
- * sampler before cancelling the remaining samplers
- * once K samplers have already completed.
- */
-const TIMEOUT_MS = 2000;
+import {
+  createQaASampler,
+  createQaBSampler,
+} from "./huggingface/qa";
 
-/**
- * Available sampler arms.
- *
- * Each entry is a separate Thompson arm.
- */
+import {
+  isQaReady,
+} from "./huggingface/qa/isReady";
+
+const TIMEOUT_MS = 5_000;
+const READY_POLL_MS = 50;
+
 const SAMPLERS: Array<{
   id: SamplerId;
   run: SamplerFunction;
+  isReady: () => boolean;
 }> = [
   {
     id: "wink-datetime",
     run: sampleDatetime,
+    isReady: isWinkReady,
   },
   {
     id: "wink-url",
     run: sampleURL,
+    isReady: isWinkReady,
   },
   {
     id: "wink-money",
     run: sampleMoney,
+    isReady: isWinkReady,
   },
   {
     id: "wink-hashtag",
-    run: sampleHastag
-  }
-
-  // TODO:
+    run: sampleHastag,
+    isReady: isWinkReady,
+  },
   // {
-  //   id: "unigram",
-  //   run: unigramSampler,
+  //   id: "hf-ner-PER",
+  //   run: createNerSampler(
+  //     "PER",
+  //     "person",
+  //     0.1,
+  //   ),
+  //   isReady: isNerReady,
   // },
-  //
   // {
-  //   id: "bigram",
-  //   run: bigramSampler,
+  //   id: "hf-ner-LOC",
+  //   run: createNerSampler(
+  //     "LOC",
+  //     "location",
+  //     0.1,
+  //   ),
+  //   isReady: isNerReady,
   // },
-  //
   // {
-  //   id: "trigram",
-  //   run: trigramSampler,
+  //   id: "hf-ner-ORG",
+  //   run: createNerSampler(
+  //     "ORG",
+  //     "organization",
+  //     0.1,
+  //   ),
+  //   isReady: isNerReady,
   // },
-  //
   // {
-  //   id: "tfidf",
-  //   run: tfidfSampler,
+  //   id: "hf-qa-b-person",
+  //   run: createQaBSampler(
+  //     "What do I plan to do",
+  //     "generic",
+  //     0.1,
+  //   ),
+  //   isReady: () =>
+  //     isQaReady("qa-B"),
+  // },
+  // {
+  //   id: "hf-qa-a-action",
+  //   run: createQaASampler(
+  //     "What do I plan to do",
+  //     "generic",
+  //     0.1,
+  //   ),
+  //   isReady: () =>
+  //     isQaReady("qa-A"),
   // },
 ];
-
-export async function runAvailableSamplers(
-  text: string,
-): Promise<AvailableSampler[]> {
-  if (SAMPLERS.length === 0) {
-    return [];
-  }
-
-  /*
-   * Infinity means:
-   *
-   * "Wait for every sampler."
-   */
-  if (K === Infinity) {
-    const results = await Promise.allSettled(
-      SAMPLERS.map((sampler) =>
-        runSampler(sampler, text),
-      ),
-    );
-
-    return results
-      .filter(
-        (
-          result,
-        ): result is PromiseFulfilledResult<AvailableSampler> =>
-          result.status === "fulfilled",
-      )
-      .map((result) => result.value);
-  }
-
-  /*
-   * If K is greater than or equal to the number
-   * of available samplers, there is no reason to
-   * cancel anything.
-   */
-  if (K >= SAMPLERS.length) {
-    const results = await Promise.allSettled(
-      SAMPLERS.map((sampler) =>
-        runSampler(sampler, text),
-      ),
-    );
-
-    return results
-      .filter(
-        (
-          result,
-        ): result is PromiseFulfilledResult<AvailableSampler> =>
-          result.status === "fulfilled",
-      )
-      .map((result) => result.value);
-  }
-
-  const controllers = new Map<
-    SamplerId,
-    AbortController
-  >();
-
-  const completed: AvailableSampler[] = [];
-
-  let resolveFinished:
-    | (() => void)
-    | undefined;
-
-  const finished = new Promise<void>(
-    (resolve) => {
-      resolveFinished = resolve;
-    },
-  );
-
-  /*
-   * Start every sampler immediately.
-   */
-  for (const sampler of SAMPLERS) {
-    const controller = new AbortController();
-
-    controllers.set(
-      sampler.id,
-      controller,
-    );
-
-    runSampler(
-      sampler,
-      text,
-      controller.signal,
-    )
-      .then((result) => {
-        completed.push(result);
-
-        /*
-         * As soon as K samplers have completed,
-         * we have enough arms.
-         */
-        if (completed.length >= K) {
-          resolveFinished?.();
-        }
-      })
-      .catch(() => {
-        /*
-         * Failed samplers simply don't become
-         * available Thompson arms.
-         */
-      });
-  }
-
-  /*
-   * Wait until either:
-   *
-   * 1. K samplers complete
-   * 2. timeout expires
-   *
-   * If K samplers finish, we cancel all remaining
-   * samplers immediately.
-   */
-  await Promise.race([
-    finished,
-    delay(TIMEOUT_MS),
-  ]);
-
-  /*
-   * We already have enough sampler arms.
-   * Cancel anything still running.
-   */
-  if (completed.length >= K) {
-    for (const controller of controllers.values()) {
-      if (!controller.signal.aborted) {
-        controller.abort();
-      }
-    }
-  }
-
-  /*
-   * If timeout happened before K samplers completed,
-   * we return whatever successfully completed.
-   */
-  return completed;
-}
-
-async function runSampler(
-  sampler: {
-    id: SamplerId;
-    run: SamplerFunction;
-  },
-  text: string,
-  signal?: AbortSignal,
-): Promise<AvailableSampler> {
-  const keywords = await sampler.run(
-    text,
-    signal ?? new AbortController().signal,
-  );
-
-  return {
-    id: sampler.id,
-    keywords,
-  };
-}
 
 function delay(
   milliseconds: number,
@@ -239,3 +116,260 @@ function delay(
     setTimeout(resolve, milliseconds);
   });
 }
+
+async function runSampler(
+  sampler: {
+    id: SamplerId;
+    run: SamplerFunction;
+    isReady: () => boolean;
+  },
+  text: string,
+  signal: AbortSignal,
+): Promise<AvailableSampler> {
+  const keywords = await sampler.run(
+    text,
+    signal,
+  );
+
+  return {
+    id: sampler.id,
+    keywords,
+  };
+}
+
+export async function runAvailableSamplers(
+  text: string,
+  k: number,
+): Promise<AvailableSampler[]> {
+  if (k <= 0) {
+    return [];
+  }
+
+  const controllers = new Map<
+    SamplerId,
+    AbortController
+  >();
+
+  const startedSamplers =
+    new Set<SamplerId>();
+
+  const completedSamplers =
+    new Set<SamplerId>();
+
+  const availableSamplers =
+    new Map<
+      SamplerId,
+      AvailableSampler
+    >();
+
+  let resolveFinished:
+    | (() => void)
+    | undefined;
+
+  const finished =
+    new Promise<void>((resolve) => {
+      resolveFinished = resolve;
+    });
+
+  const tryStartReadySamplers =
+    () => {
+      for (const sampler of SAMPLERS) {
+        if (
+          startedSamplers.has(
+            sampler.id,
+          )
+        ) {
+          continue;
+        }
+
+        let ready = false;
+
+        try {
+          ready = sampler.isReady();
+        } catch {
+          ready = false;
+        }
+
+        if (!ready) {
+          continue;
+        }
+
+        startedSamplers.add(
+          sampler.id,
+        );
+
+        const controller =
+          new AbortController();
+
+        controllers.set(
+          sampler.id,
+          controller,
+        );
+
+        void runSampler(
+          sampler,
+          text,
+          controller.signal,
+        )
+          .then((result) => {
+            completedSamplers.add(
+              sampler.id,
+            );
+
+            /*
+             * An empty sampler is not an
+             * available candidate.
+             *
+             * It therefore does not count
+             * toward K.
+             */
+            if (
+              result.keywords.length === 0
+            ) {
+              return;
+            }
+
+            availableSamplers.set(
+              sampler.id,
+              result,
+            );
+
+            /*
+             * Only usable samplers count
+             * toward K.
+             */
+            if (
+              availableSamplers.size >= k
+            ) {
+              resolveFinished?.();
+            }
+          })
+          .catch((error) => {
+            completedSamplers.add(
+              sampler.id,
+            );
+
+            /*
+             * AbortError is expected when
+             * the request has already
+             * reached K.
+             */
+            if (
+              error instanceof DOMException &&
+              error.name === "AbortError"
+            ) {
+              return;
+            }
+
+            console.error(
+              `Sampler "${sampler.id}" failed:`,
+              error,
+            );
+          });
+      }
+    };
+
+  const startedAt = Date.now();
+
+  /*
+   * Start everything that is already
+   * initialized.
+   */
+  tryStartReadySamplers();
+
+  /*
+   * Continue polling readiness so a
+   * sampler whose model finishes loading
+   * during this request can participate.
+   */
+  while (
+    availableSamplers.size < k
+  ) {
+    /*
+     * Start any samplers that became
+     * ready since the previous check.
+     */
+    tryStartReadySamplers();
+
+    /*
+     * If every sampler has been started
+     * and every started sampler has
+     * completed, there is nothing left
+     * that can produce another result.
+     */
+    const allSamplersStarted =
+      startedSamplers.size ===
+      SAMPLERS.length;
+
+    const allStartedSamplersCompleted =
+      completedSamplers.size ===
+      startedSamplers.size;
+
+    if (
+      allSamplersStarted &&
+      allStartedSamplersCompleted
+    ) {
+      break;
+    }
+
+    const elapsed =
+      Date.now() - startedAt;
+
+    if (
+      elapsed >= TIMEOUT_MS
+    ) {
+      break;
+    }
+
+    const remaining =
+      TIMEOUT_MS - elapsed;
+
+    await Promise.race([
+      finished,
+      delay(
+        Math.min(
+          READY_POLL_MS,
+          remaining,
+        ),
+      ),
+    ]);
+  }
+
+  /*
+   * Once enough usable samplers have
+   * produced results, cancel samplers
+   * that are still running.
+   */
+  if (
+    availableSamplers.size >= k
+  ) {
+    for (
+      const controller of
+        controllers.values()
+    ) {
+      if (
+        !controller.signal.aborted
+      ) {
+        controller.abort();
+      }
+    }
+  }
+
+  /*
+   * Preserve registry order rather
+   * than completion order.
+   */
+  return SAMPLERS
+    .map((sampler) =>
+      availableSamplers.get(
+        sampler.id,
+      ),
+    )
+    .filter(
+      (
+        sampler,
+      ): sampler is AvailableSampler =>
+        sampler !== undefined,
+    );
+}
+
