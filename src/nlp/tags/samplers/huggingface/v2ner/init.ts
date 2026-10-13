@@ -5,7 +5,7 @@ export let nerObj: MyNER = new MyNER()
 
 
 export async function initializeNerSampler(): Promise<void> {
-  if (nerObj.pipelineReady && nerObj.nerPipeline) {
+  if (MyNER.pipelineReady && MyNER.nerPipeline) {
     return;
   }
 
