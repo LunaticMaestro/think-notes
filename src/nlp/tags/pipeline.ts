@@ -1,6 +1,6 @@
 import {
   runAvailableSamplers,
-} from "./samplers/runAvailableSamplers";
+} from "./samplers/v2RunAvailableSamplers";
 
 import type { AvailableSampler } from "./samplers/types";
 import type { DecisionPolicy } from "./decision/policy/DecisionPolicy";
@@ -16,7 +16,6 @@ export async function tagFinder(
   const samplers =
     await runAvailableSamplers(text, 5);
 
-  console.log("SAmplers: ", samplers)
   const candidates =
     samplers.filter(
       (sampler) =>
@@ -31,6 +30,7 @@ export async function tagFinder(
     K
   )
   console.log("Sel: ", selection)
+  // const selection: Keyword[] = []
 
   return selection
 }

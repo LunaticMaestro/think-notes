@@ -15,6 +15,28 @@ import {
   sampleHastag,
 } from "./winknlp";
 
+import {
+  createNerSampler,
+} from "./huggingface/ner";
+
+import {
+  isReady as isNerReady,
+} from "./huggingface/ner/isReady";
+
+import {
+  nerObj,
+  MyNERSampler
+} from "./huggingface/v2ner";
+
+import {
+  createQaASampler,
+  createQaBSampler,
+} from "./huggingface/qa";
+
+import {
+  isQaReady,
+} from "./huggingface/qa/isReady";
+
 const TIMEOUT_MS = 5_000;
 const READY_POLL_MS = 50;
 
@@ -23,26 +45,82 @@ const SAMPLERS: Array<{
   run: SamplerFunction;
   isReady: () => boolean;
 }> = [
-  {
-    id: "wink-datetime",
-    run: sampleDatetime,
-    isReady: isWinkReady,
-  },
-  {
-    id: "wink-url",
-    run: sampleURL,
-    isReady: isWinkReady,
-  },
-  {
-    id: "wink-money",
-    run: sampleMoney,
-    isReady: isWinkReady,
-  },
+  // {
+  //   id: "wink-datetime",
+  //   run: sampleDatetime,
+  //   isReady: isWinkReady,
+  // },
+  // {
+  //   id: "wink-url",
+  //   run: sampleURL,
+  //   isReady: isWinkReady,
+  // },
+  // {
+  //   id: "wink-money",
+  //   run: sampleMoney,
+  //   isReady: isWinkReady,
+  // },
   {
     id: "wink-hashtag",
     run: sampleHastag,
     isReady: isWinkReady,
   },
+  // {
+  //   id: "hf-ner-PER",
+  //   run: createNerSampler(
+  //     "PER",
+  //     "person",
+  //     0.1,
+  //   ),
+  //   isReady: isNerReady,
+  // },
+  {
+    id: "hf-ner-LOC",
+    run: new MyNERSampler(
+      "LOC",
+      "location",
+      0.1,
+    ).predict,
+    isReady: nerObj.isReady,
+  },
+  // {
+  //   id: "hf-ner-LOC",
+  //   run: createNerSampler(
+  //     "LOC",
+  //     "location",
+  //     0.1,
+  //   ),
+  //   isReady: isNerReady,
+  // },
+  // {
+  //   id: "hf-ner-ORG",
+  //   run: createNerSampler(
+  //     "ORG",
+  //     "organization",
+  //     0.1,
+  //   ),
+  //   isReady: isNerReady,
+  // },
+  // {
+  //   id: "hf-qa-b-person",
+  //   run: createQaBSampler(
+  //     "What do I plan to do",
+  //     "generic",
+  //     0.1,
+  //   ),
+  //   isReady: () =>
+  //     isQaReady("qa-B"),
+  // },
+  // {
+  //   id: "hf-qa-a-action",
+  //   run: createQaASampler(
+  //     "What do I plan to do",
+  //     "generic",
+  //     0.1,
+  //   ),
+  //   isReady: () =>
+  //     isQaReady("qa-A"),
+  // },
 ];
 
 function delay(
@@ -98,6 +176,7 @@ export async function runAvailableSamplers(
       AvailableSampler
     >();
 
+
   let resolveFinished:
     | (() => void)
     | undefined;
@@ -107,6 +186,7 @@ export async function runAvailableSamplers(
       resolveFinished = resolve;
     });
 
+  console.log("Available Sampler: ")
   const tryStartReadySamplers =
     () => {
       for (const sampler of SAMPLERS) {
@@ -122,8 +202,10 @@ export async function runAvailableSamplers(
 
         try {
           ready = sampler.isReady();
+          console.log(">", sampler.id)
         } catch {
           ready = false;
+          console.log("!", sampler.id)
         }
 
         if (!ready) {

@@ -6,6 +6,7 @@ import "./App.css";
 import { ReprIdeaCount } from "./emoji";
 import NoteList from "./notes/NoteList";
 import type { Keyword, Reward } from "./types/nlp";
+import { FooterAI } from "./zUI/footerAINotif";
 
 function App() {
   const tagNLPWorker = useRef<Worker | null>(null);
@@ -13,6 +14,10 @@ function App() {
   const nlpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [nlpReady, setNlpReady] = useState(false);
+  const [samplersAvailability, setSamplersAvailability] = useState({
+    available: 0, 
+    total: 0
+  })
   const predictionsRef = useRef<{
     keywords: Keyword[];
     hasNewPrediction: boolean;
@@ -62,6 +67,14 @@ function App() {
         return;
       }
 
+      if (message.type === "responseAvailableSampler") {
+        setSamplersAvailability({
+          available: message.available,
+          total: message.total
+        });
+        return;
+      }
+
       if (message.type === "complete") {
         if (message.requestId !== requestId.current) {
           return;
@@ -69,8 +82,8 @@ function App() {
 
         predictionsRef.current = {
           keywords: message.keywords,
-          hasNewPrediction: true
-        }
+          hasNewPrediction: true,
+        };
 
         console.log("R", predictionsRef.current);
 
@@ -104,6 +117,22 @@ function App() {
       if (timer !== null) {
         clearTimeout(timer);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+
+    const worker = tagNLPWorker.current;
+    if (!worker) return;
+
+    const interval = setInterval(() => {
+      worker.postMessage({
+        type: "availableSampler",
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
     };
   }, []);
 
@@ -198,6 +227,7 @@ function App() {
         predictionsRef={predictionsRef}
       />
       {countNotes > 0 ? <h2>So far... {ReprIdeaCount(countNotes)}</h2> : <></>}
+      <FooterAI samplersAvailability={samplersAvailability} />
     </div>
   );
 }
