@@ -27,7 +27,7 @@ static pipelineState: string = "idle";
     }
 
     MyNER.pipelineState = "initializing";
-    console.log(`v2NER: STARTED`);
+    // console.log(`v2NER: STARTED`);
 
     MyNER.pipelineReady = false;
 
@@ -38,7 +38,7 @@ static pipelineState: string = "idle";
         MyNER.pipelineState = info.status;
 
         if (info.status === "ready") {
-          console.log(`v2NER: ${info.status}`);
+          // console.log(`v2NER: ${info.status}`);
 
           MyNER.pipelineReady = true;
         }

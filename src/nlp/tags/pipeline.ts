@@ -22,14 +22,14 @@ export async function tagFinder(
         sampler.keywords.length > 0,
     );
     
-  console.log("Candy", candidates)
+  // console.log("Candy", candidates)
 
   const selection = await selectKeywords(
     candidates, 
     decisionPolicy,
     K
   )
-  console.log("Sel: ", selection)
+  // console.log("Sel: ", selection)
   // const selection: Keyword[] = []
 
   return selection

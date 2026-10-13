@@ -24,13 +24,13 @@ export function TagGroupWithListData({
 
   
   const onRemove = (keys: Set<Key>) => {
-  console.log("SS");
+  // console.log("SS");
 
   const dislikedKeywords = tagsList.filter((keyword) =>
     keys.has(keyword.id)
   );
 
-  console.log(dislikedKeywords)
+  // console.log(dislikedKeywords)
 
   dislikedKeywords.forEach((keyword: Keyword) => {
     rewardKeyword({

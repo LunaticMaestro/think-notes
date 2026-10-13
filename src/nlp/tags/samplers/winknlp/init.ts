@@ -10,7 +10,7 @@ export async function init(): Promise<void> {
   if (nlp) {
     return;
   }
-  console.log("NLP: WinkNLP: Initializing")
+  // console.log("NLP: WinkNLP: Initializing")
 
   if (initializationPromise) {
     return initializationPromise;
@@ -18,7 +18,7 @@ export async function init(): Promise<void> {
 
   initializationPromise = Promise.resolve().then(() => {
     nlp = winkNLP(model);
-    console.log("NLP: WinkNLP: Ready")
+    // console.log("NLP: WinkNLP: Ready")
 
   });
 

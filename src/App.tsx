@@ -85,7 +85,7 @@ function App() {
           hasNewPrediction: true,
         };
 
-        console.log("R", predictionsRef.current);
+        // console.log("R", predictionsRef.current);
 
         return;
       }
