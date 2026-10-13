@@ -8,10 +8,10 @@ export async function loadNerPipeline(): Promise<
 > {
   return pipeline(
     "token-classification",
-    "Xenova/bert-base-NER",
+    "onnx-community/distilbert-NER-ONNX",
     {
       device: "webgpu",
-      dtype: "uint8",
+      dtype: "fp16",
     },
   );
 }

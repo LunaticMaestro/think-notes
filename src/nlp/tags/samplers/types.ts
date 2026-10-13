@@ -15,5 +15,4 @@ export interface AvailableSampler {
 
 export type SamplerFunction = (
   text: string,
-  signal: AbortSignal,
 ) => Promise<SamplerKeyword[]> | SamplerKeyword[];

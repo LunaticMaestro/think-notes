@@ -2,12 +2,9 @@ import { tagFinder } from "./pipeline";
 import { initializeSamplers } from "./samplers/initializeSamplers";
 import { DecisionPolicy } from "./decision/policy/DecisionPolicy";
 import type { Scorer } from "./decision/policy/types";
+import { countAvailableSamplers } from "./samplers/v2RunAvailableSamplers";
 
-
-const DECISION_POLICY_SCORERS: Record<
-  string,
-  Scorer
-> = {
+const DECISION_POLICY_SCORERS: Record<string, Scorer> = {
   "business-weight": {
     scorerId: "business-weight",
     defaultWeight: 1,
@@ -29,9 +26,7 @@ const DECISION_POLICY_SCORERS: Record<
 const decisionPolicy = new DecisionPolicy();
 
 let initialized = false;
-let initializationPromise:
-  | Promise<void>
-  | undefined;
+let initializationPromise: Promise<void> | undefined;
 
 async function initialize(): Promise<void> {
   if (initialized) {
@@ -42,11 +37,8 @@ async function initialize(): Promise<void> {
     return initializationPromise;
   }
 
-  initializationPromise =
-  (async () => {
-    await decisionPolicy.init(
-      DECISION_POLICY_SCORERS,
-    );
+  initializationPromise = (async () => {
+    await decisionPolicy.init(DECISION_POLICY_SCORERS);
 
     initializeSamplers();
 
@@ -77,22 +69,23 @@ self.onmessage = async (event) => {
       return;
     }
 
+    if (type === "availableSampler") {
+      const { available, total } = countAvailableSamplers();
+      self.postMessage({
+        type: "responseAvailableSampler",
+        available: available,
+        total: total,
+      });
+    }
+
     if (!initialized) {
-      throw new Error(
-        "NLP worker has not been initialized.",
-      );
+      throw new Error("NLP worker has not been initialized.");
     }
 
     if (type === "find") {
-      const {
-        text,
-        requestId,
-      } = event.data;
+      const { text, requestId } = event.data;
 
-      const result = await tagFinder(
-        text,
-        decisionPolicy,
-      );
+      const result = await tagFinder(text, decisionPolicy);
 
       self.postMessage({
         type: "complete",
@@ -104,15 +97,9 @@ self.onmessage = async (event) => {
     }
 
     if (type === "update-reward") {
-      const {
-        samplerId,
-        dislike,
-      } = event.data;
+      const { samplerId, dislike } = event.data;
 
-      await decisionPolicy.updateBeta(
-        samplerId,
-        dislike,
-      );
+      await decisionPolicy.updateBeta(samplerId, dislike);
 
       return;
     }
@@ -120,10 +107,7 @@ self.onmessage = async (event) => {
     self.postMessage({
       type: "error",
       requestId: event.data.requestId,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unknown NLP error",
+      error: error instanceof Error ? error.message : "Unknown NLP error",
     });
   }
 };

@@ -199,6 +199,7 @@ function NoteCard({
               border border-accent/20
               shadow-lg shadow-accent/10
             "
+            style={{ backgroundColor: "var(--bg)" }}
             onClick={() => setIsOpen(true)}
           >
             <Card.Content className="text-m">
@@ -258,6 +259,7 @@ function NoteCard({
                   overflow-hidden
                   rounded-3xl
                 "
+                style={{ backgroundColor: "var(--bg)" }}
               >
                 <Card.Header className="shrink-0">
                   <div className="flex items-center justify-between">

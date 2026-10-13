@@ -24,6 +24,11 @@ import {
 } from "./huggingface/ner/isReady";
 
 import {
+  nerObj,
+  MyNERSampler
+} from "./huggingface/v2ner";
+
+import {
   createQaASampler,
   createQaBSampler,
 } from "./huggingface/qa";
@@ -40,21 +45,21 @@ const SAMPLERS: Array<{
   run: SamplerFunction;
   isReady: () => boolean;
 }> = [
-  {
-    id: "wink-datetime",
-    run: sampleDatetime,
-    isReady: isWinkReady,
-  },
-  {
-    id: "wink-url",
-    run: sampleURL,
-    isReady: isWinkReady,
-  },
-  {
-    id: "wink-money",
-    run: sampleMoney,
-    isReady: isWinkReady,
-  },
+  // {
+  //   id: "wink-datetime",
+  //   run: sampleDatetime,
+  //   isReady: isWinkReady,
+  // },
+  // {
+  //   id: "wink-url",
+  //   run: sampleURL,
+  //   isReady: isWinkReady,
+  // },
+  // {
+  //   id: "wink-money",
+  //   run: sampleMoney,
+  //   isReady: isWinkReady,
+  // },
   {
     id: "wink-hashtag",
     run: sampleHastag,
@@ -69,6 +74,15 @@ const SAMPLERS: Array<{
   //   ),
   //   isReady: isNerReady,
   // },
+  {
+    id: "hf-ner-LOC",
+    run: new MyNERSampler(
+      "LOC",
+      "location",
+      0.1,
+    ).predict,
+    isReady: nerObj.isReady,
+  },
   // {
   //   id: "hf-ner-LOC",
   //   run: createNerSampler(
@@ -162,6 +176,7 @@ export async function runAvailableSamplers(
       AvailableSampler
     >();
 
+
   let resolveFinished:
     | (() => void)
     | undefined;
@@ -171,6 +186,7 @@ export async function runAvailableSamplers(
       resolveFinished = resolve;
     });
 
+  console.log("Available Sampler: ")
   const tryStartReadySamplers =
     () => {
       for (const sampler of SAMPLERS) {
@@ -186,8 +202,10 @@ export async function runAvailableSamplers(
 
         try {
           ready = sampler.isReady();
+          console.log(">", sampler.id)
         } catch {
           ready = false;
+          console.log("!", sampler.id)
         }
 
         if (!ready) {

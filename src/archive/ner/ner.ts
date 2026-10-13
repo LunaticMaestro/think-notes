@@ -67,7 +67,7 @@ export function createNerSampler(
     text: string,
     signal: AbortSignal,
   ) => {
-    if (signal.aborted) {
+    if (signal.aborted)  {
       throw new DOMException(
         "Aborted",
         "AbortError",
@@ -85,7 +85,7 @@ export function createNerSampler(
       );
     }
 
-    // console.log(rawResult)
+    console.log(rawResult)
     const entities = rawResult
   .filter(isNerEntity)
   .filter(

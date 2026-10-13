@@ -55,7 +55,7 @@ export function TagGroupWithListData({
         // onSelectionChange={(keys) => list.setSelectedKeys(keys)}
       >
         {isExpanded && (
-          <Description>Tags are auto-generated</Description>
+          <Description>Tags are auto-generated. Try any #Hastags</Description>
         )}
 
         <TagGroup.List
