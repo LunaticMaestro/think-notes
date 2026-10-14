@@ -1,35 +1,35 @@
-# React + TypeScript + Vite
+# Think Notes
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+AI features at your device for your notes. Your notes are yours, you dont pay to write them nor should you make it public for AI models to be trained on.
 
-Currently, two official plugins are available:
+## Community Edition
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The Community Edition is intended to let people explore, use, modify, and share this project for permitted noncommercial purposes.
 
-## React Compiler
+You may:
+- Use the software for permitted noncommercial purposes.
+- View, modify, and adapt the source code.
+- Share the original or modified code, subject to the license terms.
+- Use modified versions privately.
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## Commercial Use
 
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
+Commercial use is not permitted under the PolyForm Noncommercial License 1.0.0 without separate permission from the copyright holder.
 
-## Expanding the Oxlint configuration
+For commercial licensing, business partnerships, or other commercial inquiries, contact:
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+**Deepak Sahu**  
+deepakwarriorgrade@gmail.com
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+## License
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+This project is licensed under the **PolyForm Noncommercial License 1.0.0**.
+
+See the [LICENSE](./LICENSE) file for the complete terms.
+
+Copyright © 2026 Luthar. All rights reserved.
+
+## Contributions
+
+Contributions are welcome, subject to review and agreement on applicable licensing terms. By submitting a contribution, you retain any rights you have in your contribution; please discuss licensing arrangements with the project maintainer before contributing.
+
